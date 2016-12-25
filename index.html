@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+  <meta charset="utf-8">
+  <title>Node Socket</title>
+  <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.js"></script>
+
+  <div class="ins" id="ins">hello</div>
+  <div class="ins" id="flaeche">hello</div>
+  <script>
+  var socket=io.connect();
+  var zeichenflaeche;
+  var zeichner;
+  var kamera;
+  var box;
+  var welt3D;
+  var pointLight=new THREE.PointLight(0xffffff);
+  var xi;
+  var yi;
+  var zi;
+
+    //Erstellung der zeichenflaeche
+    zeichenflaeche =document.getElementById('flaeche');
+
+    //Erstellung des Zeichners
+    zeichner=new THREE.WebGLRenderer({antialias:true});
+    zeichner.setSize(window.innerWidth,window.innerHeight);
+
+    zeichenflaeche.appendChild(zeichner.domElement);
+
+
+
+
+
+    //Erstellung der kamera
+    kamera=new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight,1,100);
+    kamera.position.z = 5;
+
+
+    //Erstellung der kugel
+    var boxForm = new THREE.BoxGeometry(2, 1, 0.5);
+    var boxMaterial = new THREE.MeshLambertMaterial({color:0xef589c});
+  //  var ambientLight =new THREE.AmbientLight(0xffffff,1);
+
+    // Erstellung des Schatten
+
+    box = new THREE.Mesh(boxForm, boxMaterial);
+    box.castShadow=true;
+    box.receiveShadow=true;
+
+  //  box.rotation.y=1.5708;
+  //Licht
+    pointLight.position.set(0,20,20)
+
+    //Erstellung der 3D-Welt
+    welt3D = new THREE.Scene();
+//    welt3D.add(kamera);
+    welt3D.add(box);
+    welt3D.add(pointLight);
+    //Funktion zum zeichnen der 3Dwelt
+var render=function()
+  {
+  /*  setTimeout(function(){
+    requestAnimationFrame(render);
+  },1000/30)*/
+  requestAnimationFrame(render);
+/*  for(var i=0; i<3;i++){
+    box.rotation.x =(xi/3)*i;
+    box.rotation.y =(yi/3)*i;
+    box.rotation.z=(zi/3)*i;
+
+
+    zeichner.render(welt3D, kamera);
+  } */
+
+    box.rotation.x =xi*0.1;
+  //  kamera.lookAt(box.potition);
+  //  box.rotation.y =yi;
+  //  box.rotation.z=zi;
+  //var stepY=Math.abs(kamera.rotation.y-zi);
+  //var stepX=Math.abs(kamera.rotation.x-yi);
+
+
+    //kamera.rotation.y=-zi;
+    //kamera.rotation.x=-yi;
+    //kamera.rotation.x=zi;
+
+
+  zeichner.render(welt3D, kamera);
+  }
+  //  render();
+    socket.on('obj',function(data){
+//Wichtig Achsen werden von mir vertauscht, um es überall gleich zu machen!!
+     /*yi=data.x*Math.PI/180 ;
+
+     xi=data.y*Math.PI /90;
+     zi=data.z*Math.PI /90;*/
+     yi=data.y;
+     xi=data.x;
+     zi=data.z;
+     //box.position.x=-Math.cos(zi)*-5;
+     //document.getElementById('ins').innerHTML='<br>KameraX:'+kamera.position.x+'<br>zi=:-'+zi+'<br>acos(zi)='+Math.acos(zi);
+//    document.getElementById('ins').innerHTML='<br>X='+data.x+'<br>Y='+data.y+'<br>Z='+data.z+'<br>Kamera='+Kamera.position.y;
+//document.getElementById('ins').innerHTML='<br>Kamera='+kamera.position.x+'<br>xi='+xi+'<br>dataX='+data.x+'<br>yi='+yi+'<br>zi='+zi;
+  });
+  render();
+
+  </script>
+</head>
+</html>
