@@ -26,6 +26,6 @@ socket.on('obj',function(data){
     console.log('one user disconnected' + socket.id);
   })
 })
-http.listen(5000,function(){
+http.listen(process.env.PORT || 5000,function(){
   console.log('server listening on port 5000');
 });
