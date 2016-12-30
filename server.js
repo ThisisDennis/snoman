@@ -27,5 +27,5 @@ socket.on('obj',function(data){
   })
 })
 http.listen(process.env.PORT || 5000,function(){
-  console.log('server listening on port process.env.PORT');
+  console.log('server listening on'+ port process.env.PORT);
 });
