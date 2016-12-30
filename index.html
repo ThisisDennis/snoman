@@ -1,278 +1,254 @@
-<!DOCTYPE html>
 <html>
-<head lang="en">
-  <meta charset="utf-8">
-  <title>Node Socket</title>
-  <script src="/jquery/jquery-214.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r79/three.min.js"></script>-->
+	<head>
+		<title>My first Three.js app</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<script src="three.js"></script>
+		<script src="dat.gui.js"></script>
+		<script src="OBJLoader.js"></script>
+		<script>
+		
+		
+			var guiControls = new function(){
+				this.rotation  = 0.1;
+				this.scale = 9;
+				this.camera = 1;
+				this.distance = 50;
+			}
+			
+			var datGUI = new dat.GUI();
+			datGUI.add(guiControls, 'rotation',-1.0,1.0);
+			datGUI.add(guiControls, 'scale',1,100);
+			datGUI.add(guiControls, 'camera',1,5);
+			datGUI.add(guiControls, 'distance',50,200);
+			
+			window.addEventListener("resize", resize);
+			
+			var SCREEN_WIDTH = window.innerWidth;
+			var	SCREEN_HEIGHT = window.innerHeight;
+			document.title = SCREEN_WIDTH +"x"+ SCREEN_HEIGHT;
+			var scene = new THREE.Scene();
 
-  <div class="ins" id="ins">hello</div>
-  <div class="ins" id="flaeche">hello</div>
-  <script src="three.js"></script>
-  <script src="dat.gui.js"></script>
-  <script src="OBJLoader.js"></script>
-  <script>
+			var camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, - 500, 1000 );
+			var heads = [];
+			var bodies = [];
 
+		  var renderer = new THREE.WebGLRenderer({ antialias:true });
+		  renderer.setSize( window.innerWidth, window.innerHeight );
+		 
+		  document.body.appendChild( renderer.domElement );
 
-    var guiControls = new function(){
-      this.rotation  = 0.1;
-      this.scale = 9;
-      this.camera = 1;
-      this.distance = 50;
-    }
+		  var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+			directionalLight.position.set( 0, 0, 10 );
+			scene.add( directionalLight );
+		  
+		  
+		  var ambiColor = "#cbc9bb";
+		  var ambientLight = new THREE.AmbientLight(ambiColor);
+		  scene.add(ambientLight);
 
-    var datGUI = new dat.GUI();
-    datGUI.add(guiControls, 'rotation',-1.0,1.0);
-    datGUI.add(guiControls, 'scale',1,100);
-    datGUI.add(guiControls, 'camera',1,5);
-    datGUI.add(guiControls, 'distance',50,200);
+		  
+		  var plane_geometry = new THREE.PlaneGeometry( guiControls.scale, guiControls.scale );
+		  var material = new THREE.MeshNormalMaterial( );
+		  var plane = new THREE.Mesh(plane_geometry, material );
+		  scene.add( plane );
+		  
+		  var gridHelper = new THREE.GridHelper( 200, 20 );
+		  gridHelper.rotation.x = THREE.Math.degToRad(-90);
+			scene.add( gridHelper );
+		  
+		  var manager = new THREE.LoadingManager();
+		  var loader  = new THREE.ImageLoader( manager );
 
-    window.addEventListener("resize", resize);
+		  manager.onProgress = function ( item, loaded, total ) {
 
-    var SCREEN_WIDTH = window.innerWidth;
-    var	SCREEN_HEIGHT = window.innerHeight;
-    document.title = SCREEN_WIDTH +"x"+ SCREEN_HEIGHT;
-    var scene = new THREE.Scene();
+			};
 
-    var camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, - 500, 1000 );
-    var heads = [];
-    var bodies = [];
+		  var textureBody = new THREE.Texture();
+		  var textureHead = new THREE.Texture();
 
-    var renderer = new THREE.WebGLRenderer({ antialias:true });
-    renderer.setSize( window.innerWidth, window.innerHeight );
+		  var onProgress = function ( xhr ) {
+							if ( xhr.lengthComputable ) {
+								var percentComplete = xhr.loaded / xhr.total * 100;
+								console.log( Math.round(percentComplete, 2) + '% downloaded' );
+							}
+		  };
 
-    document.body.appendChild( renderer.domElement );
+		  var onError = function ( xhr ) { };
 
-    var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    directionalLight.position.set( 0, 0, 10 );
-    scene.add( directionalLight );
+		  loader.load( 'model/Body diff MAP.jpg', function ( image ) {
+			textureBody.image = image;
+			textureBody.needsUpdate = true;
+		  });
 
+		  loader.load( 'model/HEAD diff MAP.jpg', function ( image ) {
+			textureHead.image = image;
+			textureHead.needsUpdate = true;
+		  });
 
-    var ambiColor = "#cbc9bb";
-    var ambientLight = new THREE.AmbientLight(ambiColor);
-    scene.add(ambientLight);
+		  var meshes = [];
 
+		  var objLoader = new THREE.OBJLoader();
 
-    var plane_geometry = new THREE.PlaneGeometry( guiControls.scale, guiControls.scale );
-    var material = new THREE.MeshNormalMaterial( );
-    var plane = new THREE.Mesh(plane_geometry, material );
-    scene.add( plane );
+		  objLoader.load( 'model/bb8.obj', function ( object ) {
+			console.log(object);
+			object.traverse( function ( child )
+			{
+			  if ( child instanceof THREE.Mesh )
+			  {
+				meshes.push(child);
+			  }
+			});
 
-    var gridHelper = new THREE.GridHelper( 200, 20 );
-    gridHelper.rotation.x = THREE.Math.degToRad(-90);
-    scene.add( gridHelper );
+			var head = meshes[0];
+			var body = meshes[1];
+			var mapHeightBody = new THREE.TextureLoader().load( "model/BODY bump MAP.jpg" );
+			var mapHeightHead = new THREE.TextureLoader().load( "model/HEAD bump MAP.jpg" );
 
-    var manager = new THREE.LoadingManager();
-    var loader  = new THREE.ImageLoader( manager );
+			head.material = new THREE.MeshPhongMaterial({map: textureHead, specular: 0xfceed2, bumpMap: mapHeightHead, bumpScale: 0.4, shininess: 25});
+			body.material = new THREE.MeshPhongMaterial({map: textureBody, specular: 0xfceed2, bumpMap: mapHeightBody, bumpScale: 0.4, shininess: 25});
 
-    manager.onProgress = function ( item, loaded, total ) {
+			console.log('head', head);
+			
+			var head2 = head.clone();
+			var body2 = body.clone();
+			
+			var head3 = head.clone();
+			var body3 = body.clone();
+			
+			var head4 = head.clone();
+			var body4 = body.clone();
+			
+			//head.position.y = -5;
+			//head.normalize ();
+			head.position.set(10,50,1);
+			body.position.set(10,50,1);
+			
+			head2.position.set(50,-10,1);
+			body2.position.set(50,-10,1);
+			
+			head3.position.set(-10,-50,1);
+			body3.position.set(-10,-50,1);
+			
+			head4.position.set(-50,10,1);
+			body4.position.set(-50,10,1);
 
-    };
+			heads.push(head);
+			heads.push(head2);
+			heads.push(head3);
+			heads.push(head4);
+			
+			bodies.push(body);
+			bodies.push(body2);
+			bodies.push(body3);
+			bodies.push(body4);
+			
+			
+			for(i = 0;i<4;i++){
+					heads[i].rotation.z = THREE.Math.degToRad(-90*i);
+					bodies[i].rotation.z = THREE.Math.degToRad(-90*i);
+				scene.add(heads[i]);
+				scene.add(bodies[i]);
+			}
 
-    var textureBody = new THREE.Texture();
-    var textureHead = new THREE.Texture();
+		  }, onProgress, onError );
 
-    var onProgress = function ( xhr ) {
-            if ( xhr.lengthComputable ) {
-              var percentComplete = xhr.loaded / xhr.total * 100;
-              console.log( Math.round(percentComplete, 2) + '% downloaded' );
-            }
-    };
+			// instantiate a listener
+			var audioListener = new THREE.AudioListener();
+			// add the listener to the camera
+			camera.add( audioListener );
+			// instantiate audio object
+			var sound = new THREE.Audio( audioListener );
+			// add the audio object to the scene
+			scene.add( sound );
+			// instantiate a audioLoader
+			var audioLoader = new THREE.AudioLoader();
 
-    var onError = function ( xhr ) { };
+			// load a resource
+			audioLoader.load(
+				// resource URL
+				'sound.mp3',
+				// Function when resource is loaded
+				function ( audioBuffer ) {
+					// set the audio object buffer to the loaded object
+					sound.setBuffer( audioBuffer );
 
-    loader.load( 'model/Body diff MAP.jpg', function ( image ) {
-    textureBody.image = image;
-    textureBody.needsUpdate = true;
-    });
+					// play the audio
+					sound.setLoop(true);
+					sound.play();
+					
+				},
+				// Function called when download progresses
+				function ( xhr ) {
+					console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+				},
+				// Function called when download errors
+				function ( xhr ) {
+					console.log( 'An error happened:audio' );
+				}
+			)
+		  
+		  
 
-    loader.load( 'model/HEAD diff MAP.jpg', function ( image ) {
-    textureHead.image = image;
-    textureHead.needsUpdate = true;
-    });
+		  var render = function () {
+			requestAnimationFrame( render );
+			
+			
+			plane.scale.x = guiControls.scale;
+			plane.scale.y = guiControls.scale;
+			camera.zoom = guiControls.camera;
+			camera.updateProjectionMatrix();
+			
+			for(i = 0;i<4;i++){
+				if(i==0){
+					heads[i].rotation.y += guiControls.rotation;
+					bodies[i].rotation.y += -guiControls.rotation;
+					heads[i].position.y = guiControls.distance;
+					bodies[i].position.y = guiControls.distance;
+				}
+				if(i==1){
+					heads[i].rotation.x += guiControls.rotation;
+					bodies[i].rotation.x += -guiControls.rotation;
+					heads[i].position.x = guiControls.distance;
+					bodies[i].position.x = guiControls.distance;
+				}
+				if(i==2){
+					heads[i].rotation.y += guiControls.rotation;
+					bodies[i].rotation.y += -guiControls.rotation;
+					heads[i].position.y = -guiControls.distance;
+					bodies[i].position.y = -guiControls.distance;
+				}
+				if(i==3){
+					heads[i].rotation.x += guiControls.rotation;
+					bodies[i].rotation.x += -guiControls.rotation;
+					heads[i].position.x = -guiControls.distance;
+					bodies[i].position.x = -guiControls.distance;
+				}		
+			}
+			
+			renderer.render(scene, camera);
+		  };
+		  render();
 
-    var meshes = [];
+		  function resize(){
+				SCREEN_WIDTH = window.innerWidth;
+				SCREEN_HEIGHT = window.innerHeight;
+				document.title = SCREEN_WIDTH +"x"+ SCREEN_HEIGHT;
+				
+				camera.left = window.innerWidth / - 2;
+				camera.right = window.innerWidth / 2;
+				camera.top = window.innerHeight / 2;
+				camera.bottom = window.innerHeight / - 2;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				
+				
+			};
 
-    var objLoader = new THREE.OBJLoader();
-
-    objLoader.load( 'model/bb8.obj', function ( object ) {
-    console.log(object);
-    object.traverse( function ( child )
-    {
-      if ( child instanceof THREE.Mesh )
-      {
-      meshes.push(child);
-      }
-    });
-
-    var head = meshes[0];
-    var body = meshes[1];
-    var mapHeightBody = new THREE.TextureLoader().load( "model/BODY bump MAP.jpg" );
-    var mapHeightHead = new THREE.TextureLoader().load( "model/HEAD bump MAP.jpg" );
-
-    head.material = new THREE.MeshPhongMaterial({map: textureHead, specular: 0xfceed2, bumpMap: mapHeightHead, bumpScale: 0.4, shininess: 25});
-    body.material = new THREE.MeshPhongMaterial({map: textureBody, specular: 0xfceed2, bumpMap: mapHeightBody, bumpScale: 0.4, shininess: 25});
-
-    console.log('head', head);
-
-    var head2 = head.clone();
-    var body2 = body.clone();
-
-    var head3 = head.clone();
-    var body3 = body.clone();
-
-    var head4 = head.clone();
-    var body4 = body.clone();
-
-    //head.position.y = -5;
-    //head.normalize ();
-    head.position.set(10,50,1);
-    body.position.set(10,50,1);
-
-    head2.position.set(50,-10,1);
-    body2.position.set(50,-10,1);
-
-    head3.position.set(-10,-50,1);
-    body3.position.set(-10,-50,1);
-
-    head4.position.set(-50,10,1);
-    body4.position.set(-50,10,1);
-
-    heads.push(head);
-    heads.push(head2);
-    heads.push(head3);
-    heads.push(head4);
-
-    bodies.push(body);
-    bodies.push(body2);
-    bodies.push(body3);
-    bodies.push(body4);
-
-
-    for(i = 0;i<4;i++){
-        heads[i].rotation.z = THREE.Math.degToRad(-90*i);
-        bodies[i].rotation.z = THREE.Math.degToRad(-90*i);
-      scene.add(heads[i]);
-      scene.add(bodies[i]);
-    }
-
-    }, onProgress, onError );
-
-    // instantiate a listener
-    var audioListener = new THREE.AudioListener();
-    // add the listener to the camera
-    camera.add( audioListener );
-    // instantiate audio object
-    var sound = new THREE.Audio( audioListener );
-    // add the audio object to the scene
-    scene.add( sound );
-    // instantiate a audioLoader
-    var audioLoader = new THREE.AudioLoader();
-
-    // load a resource
-    audioLoader.load(
-      // resource URL
-      'sound.mp3',
-      // Function when resource is loaded
-      function ( audioBuffer ) {
-        // set the audio object buffer to the loaded object
-        sound.setBuffer( audioBuffer );
-
-        // play the audio
-        sound.setLoop(true);
-        sound.play();
-
-      },
-      // Function called when download progresses
-      function ( xhr ) {
-        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-      },
-      // Function called when download errors
-      function ( xhr ) {
-        console.log( 'An error happened:audio' );
-      }
-    )
-
-
-
-    var render = function () {
-    requestAnimationFrame( render );
-
-
-    plane.scale.x = guiControls.scale;
-    plane.scale.y = guiControls.scale;
-    camera.zoom = guiControls.camera;
-    camera.updateProjectionMatrix();
-
-    for(i = 0;i<4;i++){
-
-      /*
-      if(i==0){
-        heads[i].rotation.y += guiControls.rotation;
-        bodies[i].rotation.y += -guiControls.rotation;
-        heads[i].position.y = guiControls.distance;
-        bodies[i].position.y = guiControls.distance;
-      }
-      if(i==1){
-        heads[i].rotation.x += guiControls.rotation;
-        bodies[i].rotation.x += -guiControls.rotation;
-        heads[i].position.x = guiControls.distance;
-        bodies[i].position.x = guiControls.distance;
-      }
-      if(i==2){
-        heads[i].rotation.y += guiControls.rotation;
-        bodies[i].rotation.y += -guiControls.rotation;
-        heads[i].position.y = -guiControls.distance;
-        bodies[i].position.y = -guiControls.distance;
-      }
-      if(i==3){
-        heads[i].rotation.x += guiControls.rotation;
-        bodies[i].rotation.x += -guiControls.rotation;
-        heads[i].position.x = -guiControls.distance;
-        bodies[i].position.x = -guiControls.distance;
-      }
-      */
-      heads[i].rotation.x =yi;
-      bodies[i].rotation.x = -yi;
-
-    }
-
-    renderer.render(scene, camera);
-    };
-
-
-
-  //  render();
-    socket.on('obj',function(data){
-//Wichtig Achsen werden von mir vertauscht, um es überall gleich zu machen!!
-     /*yi=data.x*Math.PI/180 ;
-
-     xi=data.y*Math.PI /90;
-     zi=data.z*Math.PI /90;*/
-     yi=data.y;
-     xi=data.x;
-     zi=data.z;
-     //box.position.x=-Math.cos(zi)*-5;
-     //document.getElementById('ins').innerHTML='<br>KameraX:'+kamera.position.x+'<br>zi=:-'+zi+'<br>acos(zi)='+Math.acos(zi);
-//    document.getElementById('ins').innerHTML='<br>X='+data.x+'<br>Y='+data.y+'<br>Z='+data.z+'<br>Kamera='+Kamera.position.y;
-//document.getElementById('ins').innerHTML='<br>Kamera='+kamera.position.x+'<br>xi='+xi+'<br>dataX='+data.x+'<br>yi='+yi+'<br>zi='+zi;
-  });
-
-  function resize(){
-    SCREEN_WIDTH = window.innerWidth;
-    SCREEN_HEIGHT = window.innerHeight;
-    document.title = SCREEN_WIDTH +"x"+ SCREEN_HEIGHT;
-
-    camera.left = window.innerWidth / - 2;
-    camera.right = window.innerWidth / 2;
-    camera.top = window.innerHeight / 2;
-    camera.bottom = window.innerHeight / - 2;
-    camera.updateProjectionMatrix();
-    renderer.setSize( window.innerWidth, window.innerHeight );
-
-  render();
-};
-  </script>
-</head>
+		</script>
+	</body>
 </html>
