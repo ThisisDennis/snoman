@@ -18,7 +18,7 @@ socket.on('obj',function(data){
       x:data.x,
       y:data.y,
       z:data.z
-
+      console.log('data:'+data.x);
     })
     console.log(data.x*Math.PI/180,data.y*Math.PI/180,data.z*Math.PI/180 );
   })
@@ -27,5 +27,5 @@ socket.on('obj',function(data){
   })
 })
 http.listen(process.env.PORT || 5000,function(){
-  console.log('server listening on port 5000');
+  console.log('server listening on port process.env.PORT');
 });
