@@ -4,13 +4,13 @@
   "description": "simple data stream app",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start":"node server.js"
+
   },
   "author": "Dennis Hinterwimmer",
   "license": "ISC",
   "dependencies":{
     "socket.io":"*",
     "express":"*"
-
   }
 }
