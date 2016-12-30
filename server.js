@@ -18,7 +18,7 @@ socket.on('obj',function(data){
       x:data.x,
       y:data.y,
       z:data.z
-      console.log('data:'+data.x);
+    //  console.log('data:'+data.x);
     })
     console.log(data.x*Math.PI/180,data.y*Math.PI/180,data.z*Math.PI/180 );
   })
