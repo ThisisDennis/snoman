@@ -9,87 +9,240 @@
 
   <div class="ins" id="ins">hello</div>
   <div class="ins" id="flaeche">hello</div>
+  <script src="three.js"></script>
+  <script src="dat.gui.js"></script>
+  <script src="OBJLoader.js"></script>
   <script>
-  var socket=io.connect();
-  var zeichenflaeche;
-  var zeichner;
-  var kamera;
-  var box;
-  var welt3D;
-  var pointLight=new THREE.PointLight(0xffffff);
-  var xi;
-  var yi;
-  var zi;
-
-    //Erstellung der zeichenflaeche
-    zeichenflaeche =document.getElementById('flaeche');
-
-    //Erstellung des Zeichners
-    zeichner=new THREE.WebGLRenderer({antialias:true});
-    zeichner.setSize(window.innerWidth,window.innerHeight);
-
-    zeichenflaeche.appendChild(zeichner.domElement);
 
 
+    var guiControls = new function(){
+      this.rotation  = 0.1;
+      this.scale = 9;
+      this.camera = 1;
+      this.distance = 50;
+    }
+
+    var datGUI = new dat.GUI();
+    datGUI.add(guiControls, 'rotation',-1.0,1.0);
+    datGUI.add(guiControls, 'scale',1,100);
+    datGUI.add(guiControls, 'camera',1,5);
+    datGUI.add(guiControls, 'distance',50,200);
+
+    window.addEventListener("resize", resize);
+
+    var SCREEN_WIDTH = window.innerWidth;
+    var	SCREEN_HEIGHT = window.innerHeight;
+    document.title = SCREEN_WIDTH +"x"+ SCREEN_HEIGHT;
+    var scene = new THREE.Scene();
+
+    var camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, - 500, 1000 );
+    var heads = [];
+    var bodies = [];
+
+    var renderer = new THREE.WebGLRenderer({ antialias:true });
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    document.body.appendChild( renderer.domElement );
+
+    var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    directionalLight.position.set( 0, 0, 10 );
+    scene.add( directionalLight );
+
+
+    var ambiColor = "#cbc9bb";
+    var ambientLight = new THREE.AmbientLight(ambiColor);
+    scene.add(ambientLight);
+
+
+    var plane_geometry = new THREE.PlaneGeometry( guiControls.scale, guiControls.scale );
+    var material = new THREE.MeshNormalMaterial( );
+    var plane = new THREE.Mesh(plane_geometry, material );
+    scene.add( plane );
+
+    var gridHelper = new THREE.GridHelper( 200, 20 );
+    gridHelper.rotation.x = THREE.Math.degToRad(-90);
+    scene.add( gridHelper );
+
+    var manager = new THREE.LoadingManager();
+    var loader  = new THREE.ImageLoader( manager );
+
+    manager.onProgress = function ( item, loaded, total ) {
+
+    };
+
+    var textureBody = new THREE.Texture();
+    var textureHead = new THREE.Texture();
+
+    var onProgress = function ( xhr ) {
+            if ( xhr.lengthComputable ) {
+              var percentComplete = xhr.loaded / xhr.total * 100;
+              console.log( Math.round(percentComplete, 2) + '% downloaded' );
+            }
+    };
+
+    var onError = function ( xhr ) { };
+
+    loader.load( 'model/Body diff MAP.jpg', function ( image ) {
+    textureBody.image = image;
+    textureBody.needsUpdate = true;
+    });
+
+    loader.load( 'model/HEAD diff MAP.jpg', function ( image ) {
+    textureHead.image = image;
+    textureHead.needsUpdate = true;
+    });
+
+    var meshes = [];
+
+    var objLoader = new THREE.OBJLoader();
+
+    objLoader.load( 'model/bb8.obj', function ( object ) {
+    console.log(object);
+    object.traverse( function ( child )
+    {
+      if ( child instanceof THREE.Mesh )
+      {
+      meshes.push(child);
+      }
+    });
+
+    var head = meshes[0];
+    var body = meshes[1];
+    var mapHeightBody = new THREE.TextureLoader().load( "model/BODY bump MAP.jpg" );
+    var mapHeightHead = new THREE.TextureLoader().load( "model/HEAD bump MAP.jpg" );
+
+    head.material = new THREE.MeshPhongMaterial({map: textureHead, specular: 0xfceed2, bumpMap: mapHeightHead, bumpScale: 0.4, shininess: 25});
+    body.material = new THREE.MeshPhongMaterial({map: textureBody, specular: 0xfceed2, bumpMap: mapHeightBody, bumpScale: 0.4, shininess: 25});
+
+    console.log('head', head);
+
+    var head2 = head.clone();
+    var body2 = body.clone();
+
+    var head3 = head.clone();
+    var body3 = body.clone();
+
+    var head4 = head.clone();
+    var body4 = body.clone();
+
+    //head.position.y = -5;
+    //head.normalize ();
+    head.position.set(10,50,1);
+    body.position.set(10,50,1);
+
+    head2.position.set(50,-10,1);
+    body2.position.set(50,-10,1);
+
+    head3.position.set(-10,-50,1);
+    body3.position.set(-10,-50,1);
+
+    head4.position.set(-50,10,1);
+    body4.position.set(-50,10,1);
+
+    heads.push(head);
+    heads.push(head2);
+    heads.push(head3);
+    heads.push(head4);
+
+    bodies.push(body);
+    bodies.push(body2);
+    bodies.push(body3);
+    bodies.push(body4);
+
+
+    for(i = 0;i<4;i++){
+        heads[i].rotation.z = THREE.Math.degToRad(-90*i);
+        bodies[i].rotation.z = THREE.Math.degToRad(-90*i);
+      scene.add(heads[i]);
+      scene.add(bodies[i]);
+    }
+
+    }, onProgress, onError );
+
+    // instantiate a listener
+    var audioListener = new THREE.AudioListener();
+    // add the listener to the camera
+    camera.add( audioListener );
+    // instantiate audio object
+    var sound = new THREE.Audio( audioListener );
+    // add the audio object to the scene
+    scene.add( sound );
+    // instantiate a audioLoader
+    var audioLoader = new THREE.AudioLoader();
+
+    // load a resource
+    audioLoader.load(
+      // resource URL
+      'sound.mp3',
+      // Function when resource is loaded
+      function ( audioBuffer ) {
+        // set the audio object buffer to the loaded object
+        sound.setBuffer( audioBuffer );
+
+        // play the audio
+        sound.setLoop(true);
+        sound.play();
+
+      },
+      // Function called when download progresses
+      function ( xhr ) {
+        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+      },
+      // Function called when download errors
+      function ( xhr ) {
+        console.log( 'An error happened:audio' );
+      }
+    )
 
 
 
-    //Erstellung der kamera
-    kamera=new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight,1,100);
-    kamera.position.z = 5;
+    var render = function () {
+    requestAnimationFrame( render );
 
 
-    //Erstellung der kugel
-    var boxForm = new THREE.BoxGeometry(2, 1, 0.5);
-    var boxMaterial = new THREE.MeshLambertMaterial({color:0xef589c});
-  //  var ambientLight =new THREE.AmbientLight(0xffffff,1);
+    plane.scale.x = guiControls.scale;
+    plane.scale.y = guiControls.scale;
+    camera.zoom = guiControls.camera;
+    camera.updateProjectionMatrix();
 
-    // Erstellung des Schatten
+    for(i = 0;i<4;i++){
 
-    box = new THREE.Mesh(boxForm, boxMaterial);
-    box.castShadow=true;
-    box.receiveShadow=true;
+      /*
+      if(i==0){
+        heads[i].rotation.y += guiControls.rotation;
+        bodies[i].rotation.y += -guiControls.rotation;
+        heads[i].position.y = guiControls.distance;
+        bodies[i].position.y = guiControls.distance;
+      }
+      if(i==1){
+        heads[i].rotation.x += guiControls.rotation;
+        bodies[i].rotation.x += -guiControls.rotation;
+        heads[i].position.x = guiControls.distance;
+        bodies[i].position.x = guiControls.distance;
+      }
+      if(i==2){
+        heads[i].rotation.y += guiControls.rotation;
+        bodies[i].rotation.y += -guiControls.rotation;
+        heads[i].position.y = -guiControls.distance;
+        bodies[i].position.y = -guiControls.distance;
+      }
+      if(i==3){
+        heads[i].rotation.x += guiControls.rotation;
+        bodies[i].rotation.x += -guiControls.rotation;
+        heads[i].position.x = -guiControls.distance;
+        bodies[i].position.x = -guiControls.distance;
+      }
+      */
+      heads[i].rotation.x =yi;
+      bodies[i].rotation.x = -yi;
 
-  //  box.rotation.y=1.5708;
-  //Licht
-    pointLight.position.set(0,20,20)
+    }
 
-    //Erstellung der 3D-Welt
-    welt3D = new THREE.Scene();
-//    welt3D.add(kamera);
-    welt3D.add(box);
-    welt3D.add(pointLight);
-    //Funktion zum zeichnen der 3Dwelt
-var render=function()
-  {
-  /*  setTimeout(function(){
-    requestAnimationFrame(render);
-  },1000/30)*/
-  requestAnimationFrame(render);
-/*  for(var i=0; i<3;i++){
-    box.rotation.x =(xi/3)*i;
-    box.rotation.y =(yi/3)*i;
-    box.rotation.z=(zi/3)*i;
-
-
-    zeichner.render(welt3D, kamera);
-  } */
-
-    box.rotation.x =xi*0.1;
-  //  kamera.lookAt(box.potition);
-    box.rotation.y =yi;
-    box.rotation.z=zi;
-  //var stepY=Math.abs(kamera.rotation.y-zi);
-  //var stepX=Math.abs(kamera.rotation.x-yi);
+    renderer.render(scene, camera);
+    };
 
 
-    //kamera.rotation.y=-zi;
-    //kamera.rotation.x=-yi;
-    //kamera.rotation.x=zi;
 
-
-  zeichner.render(welt3D, kamera);
-  }
   //  render();
     socket.on('obj',function(data){
 //Wichtig Achsen werden von mir vertauscht, um es überall gleich zu machen!!
@@ -105,8 +258,21 @@ var render=function()
 //    document.getElementById('ins').innerHTML='<br>X='+data.x+'<br>Y='+data.y+'<br>Z='+data.z+'<br>Kamera='+Kamera.position.y;
 //document.getElementById('ins').innerHTML='<br>Kamera='+kamera.position.x+'<br>xi='+xi+'<br>dataX='+data.x+'<br>yi='+yi+'<br>zi='+zi;
   });
-  render();
 
+  function resize(){
+    SCREEN_WIDTH = window.innerWidth;
+    SCREEN_HEIGHT = window.innerHeight;
+    document.title = SCREEN_WIDTH +"x"+ SCREEN_HEIGHT;
+
+    camera.left = window.innerWidth / - 2;
+    camera.right = window.innerWidth / 2;
+    camera.top = window.innerHeight / 2;
+    camera.bottom = window.innerHeight / - 2;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+  render();
+};
   </script>
 </head>
 </html>
